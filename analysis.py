@@ -24,7 +24,7 @@ for col in numeric_col:
     plt.figure(figsize=(8,6))
     sns.histplot(df[col], kde=True, bins=20)
     plt.title(f"Distribution of {col}")
-    plt.savefig(f"Distribution of {col}")
+    # plt.savefig(f"Distribution of {col}")
     plt.show()
 
 # getting countplot
@@ -34,11 +34,12 @@ plt.show()
 for col in numeric_col:
     plt.figure(figsize=(6,4))
     sns.boxplot(x=df[col])
+    plt.savefig(f"{col}")
     plt.show()
 # plotting heatmap for correlation
 plt.figure(figsize=(8,6))
 sns.heatmap(df.corr(numeric_only=True),annot=True)
-plt.savefig("correlation")
+# plt.savefig("correlation")
 plt.show()
 
 #now data cleaning and processing
@@ -82,9 +83,9 @@ df_cleaned=df_cleaned.astype(int)
 print(df_cleaned.head())
 
 # Feature Engineering and Extraction
-# it is required to delete and columns that will be necessary for the machine learning models
+# it is required to delete and add columns that will be necessary for the machine learning models
 sns.histplot(df["bmi"])
-plt.savefig("bmi")
+# plt.savefig("bmi")
 plt.show()
 # 1.Now create bmi_category
 df_cleaned["bmi_category"]=pd.cut(

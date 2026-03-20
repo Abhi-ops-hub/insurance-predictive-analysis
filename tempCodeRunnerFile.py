@@ -1,1 +1,1 @@
-print(df.info())
+plt.savefig(f"Distribution of {col}")
