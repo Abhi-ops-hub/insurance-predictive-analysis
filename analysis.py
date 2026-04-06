@@ -30,7 +30,7 @@ for col in numeric_col:
 # getting countplot
 sns.countplot(x=df['smoker'])
 plt.show()
-# creating boxplots
+# creating boxplots(for matching input and output)
 for col in numeric_col:
     plt.figure(figsize=(6,4))
     sns.boxplot(x=df[col])
@@ -43,6 +43,7 @@ sns.heatmap(df.corr(numeric_only=True),annot=True)
 plt.show()
 
 #now data cleaning and processing
+
 # 1.lets take the data by new name i.e df_cleaned
 df_cleaned=df.copy()
 print(df_cleaned.head())
@@ -54,10 +55,13 @@ df_cleaned.drop_duplicates(inplace=True)
 print(df_cleaned.isnull().sum())
 # checking data types of the given data so that we can change the object data types
 print(df_cleaned.dtypes)
-# now conversion of object datatypes
+
+# now conversion of object datatypes to numeric data types
+
 print(df_cleaned['sex'].value_counts())
-# we can number of males and females
-# now conversion starts(males into 0 and females into 1)
+# we can count number of males and females
+# now conversion starts(males into 0 and females into 1) using map method
+# it is called "labell encoding"
 df_cleaned['sex']=df_cleaned['sex'].map({"male":0,"female":1})
 print(df_cleaned.head())
 # now same for smoker
@@ -73,31 +77,63 @@ df_cleaned.rename(columns={
 print(df_cleaned.head())
 # now changing for region counts
 print(df['region'].value_counts())
-# now do hotcoding for this, to simplify the same by making the different columns name like northeast and southeast
+# now do "1 hotcoding" for this, to simplify the same by making the different columns name like northeast and southeast
 # for this we have to call function get dummies adn we have to make DropFirst=true because otherwise it would conside region columns as dummy column
 
 df_cleaned=pd.get_dummies(df_cleaned,columns=["region"],drop_first=True)
 print(df_cleaned.head())
+# now we got region into northeast , southeast etc.
 # now changing true false value to 1 and 0
 df_cleaned=df_cleaned.astype(int)
 print(df_cleaned.head())
 
 # Feature Engineering and Extraction
+
 # it is required to delete and add columns that will be necessary for the machine learning models
 sns.histplot(df["bmi"])
-# plt.savefig("bmi")
+plt.savefig("bmi")
 plt.show()
+# we will make new columns for ml model, will divide bmi into under catergory, over weight...
 # 1.Now create bmi_category
 df_cleaned["bmi_category"]=pd.cut(
     df_cleaned["bmi"],
     bins=[0,18.5,24.9,29.9,float('inf')],
     labels=["underweight","normal","overweight","obese"]
-
 )
 print(df_cleaned.head())
-# now do hotcoding for making it inot integers
+# they are in strings so will make columns for new bmi category
+# now do hotcoding for making it to integers 
 df_cleaned=pd.get_dummies(df_cleaned,columns=["bmi_category"],drop_first=True)
 df_cleaned=df_cleaned.astype(int)
 print(df_cleaned.head())
+# prepared new column i.e bmi category_normal,obese, overwight
+
+# Now should do feature scaling of preparing machine learning model(as regression doesn't depend on value weights)
+# here in this dataset only 2 column i.e Age and BMI have weighted values
+print(df_cleaned.head())
+from sklearn.preprocessing import StandardScaler
+cols=['age','bmi','children']
+# making object 
+scaler=StandardScaler()
+df_cleaned[cols]=scaler.fit_transform(df_cleaned[cols])
+print(df_cleaned.head())
+
+# now feature extraction...in this we select features for model
+# we will take only those features which are highly co-related with charges
+
+#  we will use pearson correlation feature to check against target
+from scipy.stats import pearsonr
+selected_features=['age','bmi','children','is_female','is_smoker','region_northwest','region_southeast','region_southwest','bmi_category_normal','bmi_category_overweight','bmi_category_obese']
+correlations={
+    feature:pearsonr(df_cleaned[feature],df_cleaned['charges'])[0]
+    for feature in selected_features
+}
+correlation_df=pd.DataFrame(list(correlations.items()),columns=['feature','Pearsonr Correlation'])
+# for making it in descend order, so we can get highest correlation value
+print(correlation_df.sort_values(by='Pearsonr Correlation',ascending=False))
+
+
+
+
 
 
