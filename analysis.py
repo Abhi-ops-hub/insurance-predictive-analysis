@@ -131,8 +131,43 @@ correlations={
 correlation_df=pd.DataFrame(list(correlations.items()),columns=['feature','Pearsonr Correlation'])
 # for making it in descend order, so we can get highest correlation value
 print(correlation_df.sort_values(by='Pearsonr Correlation',ascending=False))
+# by above line of code, we got the correlations
+# now taking correlation for model
+cat_features=['is_smoker','is_female','region_northwest','region_southeast','region_southwest','bmi_category_normal','bmi_category_overweight','bmi_category_obese']
+# now importing chi square test
+from scipy.stats import chi2_contingency
+import pandas as pd
 
+alpha=0.05
+# to use chi square taable we have to make bins of charges so that they can corealte with the selected features i.e cat_features
+from scipy.stats import chi2_contingency
 
+alpha = 0.05
+
+# Create bins
+df_cleaned['charges_bin'] = pd.qcut(df_cleaned['charges'], q=4, labels=False)
+
+chi2_results = {}
+
+for col in cat_features:
+    contingency = pd.crosstab(df_cleaned[col], df_cleaned['charges_bin'])
+    
+    chi2_stat, p_val, _, _ = chi2_contingency(contingency)
+    # above p_value will be compared with alpha 0.05
+    
+    decision = 'Reject Null (keep feature)' if p_val < alpha else 'Accept Null (drop feature)'
+    
+    chi2_results[col] = {
+        'chi2_statistic': chi2_stat,
+        'p_value': p_val,
+        'Decision': decision
+    }
+chi2_df = pd.DataFrame(chi2_results).T  # <-- add .T
+chi2_df = chi2_df.sort_values(by='p_value')
+print(chi2_df)
+# now we got which cat_features we have to keep
+final_df=df_cleaned[['age','is_female','bmi','children','is_smoker','charges','region_southeast','bmi_category_obese']]
+print(final_df)
 
 
 
