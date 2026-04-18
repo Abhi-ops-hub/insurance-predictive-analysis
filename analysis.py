@@ -170,5 +170,44 @@ final_df=df_cleaned[['age','is_female','bmi','children','is_smoker','charges','r
 print(final_df)
 
 
+# Creating model
+
+from sklearn.model_selection import train_test_split
+X=final_df.drop('charges',axis=1)
+y=final_df['charges']
+# splitting x and y test
+X_train, X_test, y_train, y_test=train_test_split(X,y,test_size=0.33,random_state=42)
+# in above, X_test will be used for predicting values(here we will give name y_prediction) & then
+# value of prediction will be used to compare with y_test
+from sklearn.linear_model import LinearRegression
+model=LinearRegression()
+# fitting training data in model which is Linear Regression
+model.fit(X_train,y_train)
+# now we have created a model linearregression which can be used for pediction 
+
+y_pred=model.predict(X_test)
+print(y_pred)
+# we have predicted a model and got values in y_pred, now lets comapre it with y_test
+from sklearn.metrics import r2_score
+r2=r2_score(y_test,y_pred)
+print(r2)
+
+# our model is predicting 77.37 percent accuracy
+
+# now getting adjusted r2 value
+# n is total no. of rows, of which column we have selected in X_test
+# p is no. of column
+n=X_test.shape[0]
+print(n)
+p=X_test.shape[1]
+print(p)
+adjusted_r2=1-((1-r2)*(n-1)/(n-p-1))
+print(adjusted_r2)
+# getting adjusted r2 value as 77 percent
+
+
+
+
+
 
 
