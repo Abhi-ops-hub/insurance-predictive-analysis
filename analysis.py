@@ -185,6 +185,29 @@ model=LinearRegression()
 model.fit(X_train,y_train)
 # now we have created a model linearregression which can be used for pediction 
 
+y_pred=model.predict(X_test)
+print(y_pred)
+# we have predicted a model and got values in y_pred, now lets comapre it with y_test
+from sklearn.metrics import r2_score
+r2=r2_score(y_test,y_pred)
+print(r2)
+
+# our model is predicting 77.37 percent accuracy
+
+# now getting adjusted r2 value
+# n is total no. of rows, of which column we have selected in X_test
+# p is no. of column
+n=X_test.shape[0]
+print(n)
+p=X_test.shape[1]
+print(p)
+adjusted_r2=1-((1-r2)*(n-1)/(n-p-1))
+print(adjusted_r2)
+# getting adjusted r2 value as 77 percent
+
+
+
+
 
 
 
