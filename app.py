@@ -1,28 +1,57 @@
 import streamlit as st
 import numpy as np
-import pickle
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
 
-# ── Page config ────────────────────────────────────────────
-st.set_page_config(
-    page_title="Insurance Charge Predictor",
-    page_icon="🏥",
-    layout="centered"
-)
+st.set_page_config(page_title="Insurance Charge Predictor", page_icon="🏥", layout="centered")
 
-# ── Load model & scaler ────────────────────────────────────
+# ── Train model from CSV (cached so it only runs once) ─────
 @st.cache_resource
-def load_artifacts():
-    with open("model.pkl", "rb") as f:
-        model = pickle.load(f)
-    with open("scaler.pkl", "rb") as f:
-        scaler = pickle.load(f)
+def train_model():
+    df = pd.read_csv("insurance.csv")
+    df_cleaned = df.copy()
+    df_cleaned.drop_duplicates(inplace=True)
+
+    df_cleaned['sex']    = df_cleaned['sex'].map({"male": 0, "female": 1})
+    df_cleaned['smoker'] = df_cleaned['smoker'].map({"no": 0, "yes": 1})
+    df_cleaned.rename(columns={"sex": "is_female", "smoker": "is_smoker"}, inplace=True)
+
+    df_cleaned = pd.get_dummies(df_cleaned, columns=["region"], drop_first=True)
+    df_cleaned = df_cleaned.astype(int)
+
+    df_cleaned["bmi_category"] = pd.cut(
+        df_cleaned["bmi"],
+        bins=[0, 18.5, 24.9, 29.9, float('inf')],
+        labels=["underweight", "normal", "overweight", "obese"]
+    )
+    df_cleaned = pd.get_dummies(df_cleaned, columns=["bmi_category"], drop_first=True)
+    df_cleaned = df_cleaned.astype(int)
+
+    scaler = StandardScaler()
+    cols = ['age', 'bmi', 'children']
+    df_cleaned[cols] = scaler.fit_transform(df_cleaned[cols])
+
+    final_df = df_cleaned[[
+        'age', 'is_female', 'bmi', 'children',
+        'is_smoker', 'charges', 'region_southeast', 'bmi_category_obese'
+    ]]
+
+    X = final_df.drop('charges', axis=1)
+    y = final_df['charges']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
+
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+
     return model, scaler
 
-model, scaler = load_artifacts()
+model, scaler = train_model()
 
 # ── UI ─────────────────────────────────────────────────────
 st.title("🏥 Insurance Charge Predictor")
-st.markdown("Fill in the details below to estimate your insurance charges.")
+st.markdown("Fill in your details below to estimate your annual insurance charges.")
 st.divider()
 
 col1, col2 = st.columns(2)
@@ -33,39 +62,30 @@ with col1:
     children = st.number_input("Number of Children", min_value=0, max_value=10, value=0)
 
 with col2:
-    sex      = st.selectbox("Sex", ["Male", "Female"])
-    smoker   = st.selectbox("Smoker?", ["No", "Yes"])
-    region   = st.selectbox("Region", ["Northeast", "Northwest", "Southeast", "Southwest"])
+    sex    = st.selectbox("Sex", ["Male", "Female"])
+    smoker = st.selectbox("Smoker?", ["No", "Yes"])
+    region = st.selectbox("Region", ["Northeast", "Northwest", "Southeast", "Southwest"])
 
 st.divider()
 
-# ── Preprocessing (mirrors your training pipeline) ─────────
 def preprocess(age, bmi, children, sex, smoker, region):
-    # Scale numeric
     scaled = scaler.transform([[age, bmi, children]])[0]
     age_s, bmi_s, children_s = scaled
 
-    # Encode categoricals
     is_female        = 1 if sex == "Female" else 0
     is_smoker        = 1 if smoker == "Yes" else 0
     region_southeast = 1 if region == "Southeast" else 0
+    bmi_obese        = 1 if bmi > 29.9 else 0
 
-    # BMI category (obese = BMI > 29.9)
-    bmi_category_obese = 1 if bmi > 29.9 else 0
-
-    # Feature order must match training:
-    # ['age','is_female','bmi','children','is_smoker','region_southeast','bmi_category_obese']
     return np.array([[age_s, is_female, bmi_s, children_s,
-                      is_smoker, region_southeast, bmi_category_obese]])
+                      is_smoker, region_southeast, bmi_obese]])
 
-# ── Predict button ─────────────────────────────────────────
 if st.button("💰 Predict My Insurance Charges", use_container_width=True):
-    features = preprocess(age, bmi, children, sex, smoker, region)
+    features   = preprocess(age, bmi, children, sex, smoker, region)
     prediction = model.predict(features)[0]
 
     st.success(f"### Estimated Annual Insurance Charge: **${prediction:,.2f}**")
 
-    # Quick insight
     st.markdown("---")
     st.subheader("📊 Key Factors Affecting Your Estimate")
 
@@ -83,4 +103,4 @@ if st.button("💰 Predict My Insurance Charges", use_container_width=True):
         st.markdown(f)
 
 st.markdown("---")
-st.caption("Model: Linear Regression | Accuracy: ~77% R² | Built with scikit-learn & Streamlit")
+st.caption("Model: Linear Regression | ~77% R² Accuracy | Built with scikit-learn & Streamlit")
