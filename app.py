@@ -64,7 +64,7 @@ with col1:
 with col2:
     sex    = st.selectbox("Sex", ["Male", "Female"])
     smoker = st.selectbox("Smoker?", ["No", "Yes"])
-    region = st.selectbox("Region", ["Northeast", "Northwest", "Southeast", "Southwest"])
+    region = st.selectbox("Region", ["Northeast", "Northwest", "Southeast", "Southwest", "North", "West","South","East"])
 
 st.divider()
 
