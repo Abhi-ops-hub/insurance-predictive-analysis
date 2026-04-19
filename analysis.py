@@ -169,7 +169,6 @@ print(chi2_df)
 final_df=df_cleaned[['age','is_female','bmi','children','is_smoker','charges','region_southeast','bmi_category_obese']]
 print(final_df)
 
-
 # Creating model
 
 from sklearn.model_selection import train_test_split
@@ -205,7 +204,16 @@ adjusted_r2=1-((1-r2)*(n-1)/(n-p-1))
 print(adjusted_r2)
 # getting adjusted r2 value as 77 percent
 
+# now pushing it to streamlit
+import pickle
 
+with open("model.pkl", "wb") as f:
+    pickle.dump(model, f)
+
+with open("scaler.pkl", "wb") as f:
+    pickle.dump(scaler, f)
+
+print("✅ model.pkl and scaler.pkl saved!")
 
 
 
